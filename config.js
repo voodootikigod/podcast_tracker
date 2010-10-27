@@ -1,6 +1,7 @@
 module.exports = {
   port: 8080,
-  directory: "./files",
+  location: "files",
+  location: "http://aminutewith.s3.amazonaws.com",
   redirect: "http://www.aminutewithbrendan.com",
   headers: {amwb: "A Minute With Brendan", jsconflive: "JSConf Live"}
 }
