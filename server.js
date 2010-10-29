@@ -97,7 +97,6 @@ require('http').createServer(function (request, response) {
             (function (purl, ip) {
               paperboy.deliver(file_root, request, response)
                 .addHeader("Accept-Range", "bytes")
-                // .addHeader("Content-Type", contenttype)
                 .before(function() { 
                   track_delivery(purl); return true; })
                 .after(function(statCode) {
