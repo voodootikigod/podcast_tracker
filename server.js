@@ -1,7 +1,6 @@
 var paperboy = require('paperboy');
 var path = require("path");
 var url = require("url");
-var sys = require("sys");
 var redis = require("redis");
 var config = require("./config");
 var jade = require("jade");
@@ -14,7 +13,6 @@ var client = redis.createClient();
 var local_streaming = !(/^http/.exec(config.location));      // if location begins with http, not local streaming.
 var fileServer;
 var parsed_url;
-var log = console.log;
 
 
 if (local_streaming) {
@@ -143,7 +141,6 @@ require('http').createServer(function (request, response) {
             var request = source.request('GET', target_url, {'host': parsed_url.hostname});
             request.end();
             request.on('response', function (resp) {
-              sys.p(resp);
               if (resp.statusCode == 200) {
                 track_delivery(target_url);
                 response.writeHead(resp.statusCode, resp.headers);
