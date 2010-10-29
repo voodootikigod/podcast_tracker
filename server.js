@@ -41,25 +41,56 @@ function track_delivery(url) {
   }
 }
 
+function rollback(url) {
+  
+  if (/[a-z]+\-[0-9]{8}\.(mp3|ogg)$/.exec(url)) {
+    file_parts = url.split("/");
+    filename = file_parts[file_parts.length-1];
+    
+    // track specific format of release
+    client.decr("podcast:"+filename);
+    
+    // track of specific release
+    client.decr("podcast:"+filename.split(".")[0]);
+    
+    // track podcast count
+    client.decr("podcast:"+filename.split("-")[0]);
+  }
+}
+
+
+
+function redirect(response) { 
+  response.writeHead(301, {"Location": config.redirect});
+  response.end();
+}
+
 
 //files must maintain format {DIR}/{PODCAST_HEADER_HANDLE}_{DATE}.{FORMAT}
 
 require('http').createServer(function (request, response) {
+    var target_url = request.url;
     request.addListener('end', function () {
-      var url = request.url;
-      if (url == "/") {
-        response.writeHead(301, {"Location": config.redirect});
-        response.end();
-      } else if (url == "/statistics")  {
+      if (target_url == "/") {
+        redirect(response);
+      } else if (target_url == config.reset_uri) {
+        clients.keys("podcast:*", function (err, res) {
+          res.forEach(function (item) { client.del(item) });
+          response.writeHead(301, {"Location": config.statistics_uri});
+          response.end();
+        });
+      } else if (target_url == config.statistics_uri)  {
             client.keys("podcast:*", function (err, res) {
                 var length = res.length, count = 0, results = {};
-                config.headers.forEach(function(header) {
+                for (var header in config.headers) {
                     results[header] = {
                         title: config.headers[header],
                         total: 0,
                         data: []
                     };
-                });
+                }
+                
+                
                 // populate data
                 res.forEach(function (item) {
                     var episode = item.replace("podcast:", "");
@@ -97,46 +128,32 @@ require('http').createServer(function (request, response) {
             (function (purl, ip) {
               paperboy.deliver(file_root, request, response)
                 .addHeader("Accept-Range", "bytes")
-                // .addHeader("Content-Type", contenttype)
-                .before(function() { 
-                  track_delivery(purl); return true; })
-                .after(function(statCode) {
-                  log(statCode, purl, ip);
-                })
-                .error(function(statCode, msg) {
-                  response.writeHead(statCode, {'Content-Type': 'text/plain'});
-                  response.end("Error " + statCode);
-                  log(statCode, purl, ip, msg);
-                })
-                .otherwise(function(err) {
-                  response.writeHead(404, {'Content-Type': 'text/plain'});
-                  response.end("Error 404: File not found");
-                  log(404, purl, ip, err);
+                .before(function() { track_delivery(purl); return true; })
+                .after(function(statCode) { })
+                .error(function(statCode, msg) { 
+                  rollback(purl);
+                  redirect(response); })
+                .otherwise(function(err) { 
+                  rollback(purl);
+                  redirect(response);  
                 });
-            })(url,request.connection.remoteAddress);
+            })(target_url,request.connection.remoteAddress);
           } else {
-
-            var proxy = http.createClient(parsed_url.port || 80, parsed_url.hostname)
+            var source = http.createClient(parsed_url.port || 80, parsed_url.hostname);
+            var request = source.request('GET', target_url, {'host': parsed_url.hostname});
+            request.end();
+            request.on('response', function (resp) {
+              sys.p(resp);
+              if (resp.statusCode == 200) {
+                track_delivery(target_url);
+                response.writeHead(resp.statusCode, resp.headers);
+                resp.on('data', function (chunk) { response.write(chunk); });
+                resp.on('end', function () {response.end(); });
+              } else {
+                redirect(response);
+              }
+            });
             
-              var proxy_request = proxy.request(request.method, request.url, request.headers);
-              proxy_request.addListener('response', function (proxy_response) {
-                proxy_response.addListener('data', function(chunk) {
-                  response.write(chunk, 'binary');
-                });
-                proxy_response.addListener('end', function() {
-                  response.end();
-                });
-                if (proxy_response.statusCode == 200) {
-                  track_delivery(url);
-                }
-                response.writeHead(proxy_response.statusCode, proxy_response.headers);
-              });
-              request.addListener('data', function(chunk) {
-                proxy_request.write(chunk, 'binary');
-              });
-              request.addListener('end', function() {
-                proxy_request.end();
-              });
           }
         }
     });
