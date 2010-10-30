@@ -2,7 +2,25 @@
 html
   head
     title Download Statistics
+    link(rel="stylesheet", type="text/css", href="http://jsconf.s3.amazonaws.com/style.css")
+    link(rel="shortcut icon", href="http://arewefirstyet.com/favicon.png")
   body
-    h1 Download Statistics
-    
-      
+    header
+      h1 Downloads
+    - for (var podcast in podcasts)
+      h2
+        = podcasts[podcast].title
+        = " ("+podcasts[podcast].total+")"
+      ul.rounded
+        - each episode in episodes
+          - if (podcasts[podcast].data[episode])
+            li
+              div= episode
+              dl
+                - each key in ordering
+                  dt= key
+                  dd
+                    - if (podcasts[podcast].data[episode][key.toLowerCase()])
+                      = podcasts[podcast].data[episode][key.toLowerCase()]
+                    - else
+                      = "0"

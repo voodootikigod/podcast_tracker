@@ -1,5 +1,6 @@
 var paperboy = require('paperboy');
 var path = require("path");
+var sys = require("sys");
 var url = require("url");
 var redis = require("redis");
 var config = require("./config");
@@ -72,54 +73,67 @@ require('http').createServer(function (request, response) {
       if (target_url == "/") {
         redirect(response);
       } else if (target_url == config.reset_uri) {
-        clients.keys("podcast:*", function (err, res) {
+        client.keys("podcast:*", function (err, res) {
           res.forEach(function (item) { client.del(item) });
           response.writeHead(301, {"Location": config.statistics_uri});
           response.end();
         });
       } else if (target_url == config.statistics_uri)  {
             client.keys("podcast:*", function (err, res) {
+              if (typeof res == 'undefined' || res == null) {
+                jade.renderFile('empty.jade', {}, function(err, html){
+                  response.writeHead(200, {"Content-Type": "text/html"});
+                  response.end(html);
+                });
+              } else {
+              
                 var length = res.length, count = 0, results = {};
+                var episodes = [];
                 for (var header in config.headers) {
                     results[header] = {
                         title: config.headers[header],
                         total: 0,
-                        data: []
+                        data: {}
                     };
                 }
                 
                 
                 // populate data
                 res.forEach(function (item) {
-                    var episode = item.replace("podcast:", "");
-                    client.get(item, function (err, resp) {
+                    var i = item.toString();
+                    var episode = i.replace("podcast:", "");
+                    client.get(i, function (err, resp) {
                         var value = parseInt(resp.toString('utf8'));
                         if (config.headers[episode]) {
                             results[episode]["total"] = value;
                         } else {
-                            var parts = episode.split("_");
+                            var parts = episode.split("-");
                             var ep = parts[0];
                             var back_parts = parts[1].split(".");
                             var date = back_parts[0];
                             var ext = back_parts[1];
-                            if (typeof results[ep][date] === 'undefined') {
-                                results[ep][date] = {};
+                            if (episodes.indexOf(date) < 0) {
+                              episodes.push(date)
+                            }
+                            if (typeof results[ep]["data"][date] === 'undefined') {
+                                results[ep]["data"][date] = {};
                             }
                             if (typeof ext === 'undefined') {
-                                results[ep][date]["total"] = value;
+                                results[ep]["data"][date]["total"] = value;
                             } else {
-                                results[ep][date][ext] = value;
+                                results[ep]["data"][date][ext] = value;
                             }
                         }
                         count += 1
                         if (count == length) { 
-                          jade.renderFile('index.jade', results, function(err, html){
+                          jade.renderFile('index.jade', {locals: {podcasts: results, episodes: episodes.sort().reverse(), ordering: ["Total", "MP3", "Ogg"]} }, function(err, html){
                             response.writeHead(200, {"Content-Type": "text/html"});
                             response.end(html);
                           });
                         }
                     });
                 })
+              }
             })
         } else {
           if (local_streaming) {
