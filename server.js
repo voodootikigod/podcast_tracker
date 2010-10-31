@@ -74,7 +74,8 @@ require('http').createServer(function (request, response) {
         redirect(response);
       } else if (target_url == config.reset_uri) {
         client.keys("podcast:*", function (err, res) {
-          res.forEach(function (item) { client.del(item) });
+          if (res != null)
+            res.forEach(function (item) { client.del(item) });
           response.writeHead(301, {"Location": config.statistics_uri});
           response.end();
         });
