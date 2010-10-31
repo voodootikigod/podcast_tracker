@@ -126,7 +126,7 @@ require('http').createServer(function (request, response) {
                         }
                         count += 1
                         if (count == length) { 
-                          jade.renderFile('index.jade', {locals: {podcasts: results, episodes: episodes.sort().reverse(), ordering: ["Total", "MP3", "Ogg"]} }, function(err, html){
+                          jade.renderFile('index.jade', {locals: {podcasts: results, reset_uri: config.reset_uri, episodes: episodes.sort().reverse(), ordering: ["Total", "MP3", "Ogg"]} }, function(err, html){
                             response.writeHead(200, {"Content-Type": "text/html"});
                             response.end(html);
                           });
