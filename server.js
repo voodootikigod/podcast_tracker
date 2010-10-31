@@ -69,6 +69,7 @@ function redirect(response) {
 
 require('http').createServer(function (request, response) {
     var target_url = request.url;
+    sys.puts("Request: "+target_url);
     request.addListener('end', function () {
       if (target_url == "/") {
         redirect(response);
@@ -170,3 +171,5 @@ require('http').createServer(function (request, response) {
         }
     });
 }).listen(config.port);
+
+sys.puts("Server started on port: "+config.port);
