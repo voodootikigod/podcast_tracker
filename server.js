@@ -70,8 +70,6 @@ var is = (function () {
     return {
         duplicate: function (ip_addr,url) {
             var str = [ip_addr, url].join(":");
-            sys.puts(str);
-            sys.p(records);
             if (records.indexOf(str) >= 0) { 
                 return true;
             } else {
