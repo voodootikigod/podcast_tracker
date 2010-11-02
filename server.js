@@ -65,6 +65,26 @@ function redirect(response) {
 }
 
 
+var is = (function () {
+    var records = [];
+    return {
+        duplicate: function (ip_addr,url) {
+            var str = [ip_addr, url].join(":");
+            sys.puts(str);
+            sys.p(records);
+            if (records.indexOf(str) >= 0) { 
+                return true;
+            } else {
+                records.push(str);
+                while (records.length > 100) { records.pop(); }
+                return false;
+            }
+        }
+    }
+
+})();
+
+
 //files must maintain format {DIR}/{PODCAST_HEADER_HANDLE}_{DATE}.{FORMAT}
 
 require('http').createServer(function (request, response) {
@@ -142,7 +162,7 @@ require('http').createServer(function (request, response) {
             (function (purl, ip) {
               paperboy.deliver(file_root, request, response)
                 .addHeader("Accept-Range", "bytes")
-                .before(function() { track_delivery(purl); return true; })
+                    .before(function() { if (!is.duplicate(ip, purl)) { track_delivery(purl); return true; } })
                 .after(function(statCode) { })
                 .error(function(statCode, msg) { 
                   rollback(purl);
@@ -154,16 +174,20 @@ require('http').createServer(function (request, response) {
             })(target_url,request.connection.remoteAddress);
           } else {
             var source = http.createClient(parsed_url.port || 80, parsed_url.hostname);
-            var request = source.request('GET', target_url, {'host': parsed_url.hostname});
-            request.end();
-            request.on('response', function (resp) {
+            var req = source.request('GET', target_url, {'host': parsed_url.hostname});
+            req.end();
+            req.on('response', function (resp) {
               if (resp.statusCode == 200) {
-                track_delivery(target_url);
-                response.writeHead(resp.statusCode, resp.headers);
-                resp.on('data', function (chunk) { response.write(chunk); });
-                resp.on('end', function () {response.end(); });
+                  if (!is.duplicate(request.connection.remoteAddress, target_url)) {
+                      track_delivery(target_url);
+                  }
+                  headers = resp.headers;
+                  headers["Accept-Range"] = "bytes";
+                  response.writeHead(resp.statusCode, headers);
+                  resp.on('data', function (chunk) { response.write(chunk); });
+                  resp.on('end', function () {response.end(); });
               } else {
-                redirect(response);
+                  redirect(response);
               }
             });
             
