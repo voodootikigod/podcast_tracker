@@ -15,6 +15,17 @@ The configuration file (config.js) must be present, a template of which is provi
 
 Multiple can be provided. The location field of the configuration can specify a file path relative to the server.js file OR a HTTP URL.
 
+Dependencies
+------
+
+Requires node.js to be installed with the following packages installed, all of which are available via NPM:
+
+  * paperboy - only if using file serving functionality (not http streaming)
+  * jade
+  * redis
+
+Also it requires a [Redis](http://code.google.com/p/redis/) instance to be installed locally.
+
 Gratis
 ------
 

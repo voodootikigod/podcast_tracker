@@ -1,4 +1,4 @@
-var paperboy = require('paperboy');
+
 var path = require("path");
 var sys = require("sys");
 var url = require("url");
@@ -7,16 +7,18 @@ var config = require("./config");
 var jade = require("jade");
 var http = require("http");
 
-paperboy.contentTypes["mp3"] = "audio/mpeg";
-paperboy.contentTypes["ogg"] = "audio/ogg";
 
 var client = redis.createClient();
 var local_streaming = !(/^http/.exec(config.location));      // if location begins with http, not local streaming.
 var fileServer;
 var parsed_url;
-
+var paperboy;
 
 if (local_streaming) {
+  paperboy = require('paperboy');
+  paperboy.contentTypes["mp3"] = "audio/mpeg";
+  paperboy.contentTypes["ogg"] = "audio/ogg";
+  
   file_root = config.location;
 } else { 
   parsed_url = url.parse(config.location);
