@@ -76,7 +76,7 @@ var is = (function () {
                 return true;
             } else {
                 records.push(str);
-                while (records.length > 100) { records.pop(); }
+                while (records.length > 50) { records.pop(); }
                 return false;
             }
         }
