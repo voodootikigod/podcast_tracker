@@ -1,6 +1,5 @@
 module.exports = {
   port: 8080,
-  // location: "files",
   statistics_uri: "/admin",
   reset_uri: "/admin/reset",
   location: "http://aminutewith.s3.amazonaws.com",

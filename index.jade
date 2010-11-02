@@ -25,4 +25,4 @@ html
                     - else
                       = "0"
     p
-      a(href=reset_uri) Reset All Statistics
+      a(href=reset_uri, onclick="return confirm('You are about to reset all of the statistics gathered at this point. There is no undo. Are you sure?');") Reset All Statistics
